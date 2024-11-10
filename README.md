@@ -25,35 +25,6 @@ To use the GemBatch library, ensure you have the following prerequisites:
 
 Make sure your environment meets these requirements to leverage the full capabilities of GemBatch.
 
-## Setup
-
-firebase login
-firebase init
-- create a firestore database first
-- .gitignore -> add venv/
-
-Firestore
-Functions
-Storage
-firestore.indexes.json
-Python
-
-gcloud auth
-- gcloud config set project gembatch-test-v0-0-15
-- gcloud auth login
-- gcloud auth application-default login
-
-- check requirements.txt has gembatch
-- install in firebase functions's venv
-
-- firebase deploy --only=functions
-> first time may not success
-
-- GEMBATCH_CLOUD_STORAGE_BUCKET needs to be unique
-
-- firebase deploy --only=firestore
-> https://console.firebase.google.com/project/${PROJECT_ID}/firestore/databases/-default-/indexes
-
 ## Setup Guide
 
 Follow these steps to set up the GemBatch library in your environment:
