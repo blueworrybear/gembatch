@@ -1,0 +1,32 @@
+[project]
+name = "gembatch"
+version = "0.1.0"
+authors = [{ name = "Benno Lin", email = "blueworrybear@gmail.com" }]
+description = """\
+A Python library simplifies building language chain applications with Gemini, \
+leveraging batch mode for cost-effective prompt processing.\
+"""
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "google-cloud-aiplatform>=1.38",
+    "firebase-admin>=6.5.0",
+    "firebase-functions>=0.4.2",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.1",
+    "inquirer>=3.4.0",
+    "prompt_toolkit>=3.0.48",
+]
+[project.scripts]
+gembatch = "gembatch.__main__:main"
+[project.urls]
+Homepage = "https://github.com/blueworrybear/gembatch"
+Issues = "https://github.com/blueworrybear/gembatch/issues"
+
+[tool.setuptools.package-data]
+"gembatch" = ["firestore.indexes.json", "cloudbuild.yml"]

@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"debugpy.debugJustMyCode": false,
+		"cSpell.words": [
+			"aiplatform",
+			"ansigreen",
+			"ansired",
+			"ansiwhite",
+			"ansiyellow",
+			"gembatch",
+			"googleapis",
+			"skyblue"
+		]
+	}
+}

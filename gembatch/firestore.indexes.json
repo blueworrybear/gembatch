@@ -1,0 +1,96 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "$batch_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "$job_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "model",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "$job_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "model",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "retries",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "$job_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "model",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "retries",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "$batch_queue",
+      "fieldPath": "ttl",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "$job_queue",
+      "fieldPath": "ttl",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "$request_queue",
+      "fieldPath": "ttl",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
+}
