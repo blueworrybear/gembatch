@@ -250,6 +250,7 @@ class GeminiBatchJob:
             status=models.StatusEnum.RUNNING,
             bigquery_source=self.source_table_url,
             bigquery_destination=self.destination_table_url,
+            created_at=dt.datetime.now(tz=dt.timezone.utc),
         )
         self._prediction_job_name = name
         doc_ref = self._db.collection(

@@ -1,3 +1,8 @@
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/gembatch)
+[![PyPi](https://img.shields.io/badge/gembatch-v0.1.3-blue?logo=python)](https://pypi.org/project/gembatch/)
+![License - MIT](https://img.shields.io/github/license/blueworrybear/gembatch.svg)
+
+
 # gembatch
 
 A Python library simplifies building language chain applications with Gemini, leveraging batch mode for cost-effective prompt processing.
@@ -14,251 +19,129 @@ Many AI service providers offer batch processing modes with significant discount
 This complexity is compounded by considerations like rate limits, error handling, and potential retries. Implementing such a system often leads to convoluted code, hindering readability and maintainability.
 This is where GemBatch shines. GemBatch is a framework designed to seamlessly integrate batch processing into prompt chaining workflows without sacrificing simplicity. It allows developers to define their prompt chains sequentially, just as they would with traditional approaches, while automatically optimizing execution using batch APIs behind the scenes. This abstraction simplifies development, improves code clarity, and unlocks significant cost savings.
 
-## Requirements
+## Example at a Glance
 
-To use the GemBatch library, ensure you have the following prerequisites:
+This example demonstrates how to create a prompt chain using `gembatch.submit()` within your Firebase environment.
 
-- Python 3.12 installed.
-- A Firebase project set up.
-- Firebase Functions configured to use Python.
-- Access to Gemini models.
+```py
+import gembath
 
-Make sure your environment meets these requirements to leverage the full capabilities of GemBatch.
 
-## Setup Guide
+# Task A
+def task_a_prompt1():
+   gembatch.submit(
+       {
+           "contents": [
+               {
+                   "role": "user",
+                   "parts": [{"text": "some prompts..."}],
+               }
+           ],
+       }, # prompt 1
+       "publishers/google/models/gemini-1.5-pro-002",
+       task_a_prompt2
+   )
 
-Follow these steps to set up the GemBatch library in your environment:
 
-### Step 1: Install Python 3.12
-Ensure you have Python 3.12 installed on your system. You can download it from the [official Python website](https://www.python.org/downloads/).
+def task_a_prompt2(response: generative_models.GenerationResponse):
+   gembatch.submit(
+       {
+           "contents": [
+               {
+                   "role": "model",
+                   "parts": [{"text": response.text}],
+               },
+               {
+                   "role": "user",
+                   "parts": [{"text": "some prompts..."}],
+               }
+           ],
+       }, # prompt 2
+       "publishers/google/models/gemini-1.5-pro-002",
+       task_a_output
+   )
 
-### Step 2: Set Up Firebase
 
-> Note: For detailed instructions, you can refer to the [official Firebase guide](https://firebase.google.com/docs/functions/get-started?gen=2nd#create-a-firebase-project).
+def task_a_output(response: generative_models.GenerationResponse):
+   print(response.text)
 
-1. Log in to Firebase:
-    ```sh
-    firebase login
-    ```
-2. Create a Firestore database first.
-3. Initialize Firebase in your project directory:
-    ```sh
-    firebase init
-    ```
-
-    > Note: Make sure to initialize at least Firestore, Functions, and Storage in your Firebase project.
-4. (Optional) Add `venv/` to your `.gitignore` file to make Google Cloud build more efficient by ignoring virtual environment files..
-
-### Step 3: Authenticate with Google Cloud
-
-1. Set your project:
-    ```sh
-    gcloud config set project $PROJECT_ID
-    ```
-2. Authenticate with Google Cloud:
-    ```sh
-    gcloud auth login
-    ```
-3. Authenticate application default credentials:
-    ```sh
-    gcloud auth application-default login
-    ```
-
-### Step 4: Install Dependencies
-1. Ensure `gembatch` is listed in your `requirements.txt` file.
-2. Install dependencies in Firebase Functions' virtual environment:
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-### Step 5: Update and Deploy Firebase Functions
-
-1. Update `firebase functions`'s `main.py` as shown below:
-    ```python
-    from firebase_admin import initialize_app
-    from firebase_functions import https_fn, logger
-    from vertexai import generative_models
-
-    import gembatch
-    from gembatch import *
-
-    initialize_app()
-
-    # omit
-    ```
-
-2. Deploy Firebase Functions:
-    ```sh
-    firebase deploy --only=functions
-    ```
-    > Note: The first deployment may not succeed. Retry if necessary.
-    
-    > Warning: Ensure the `GEMBATCH_CLOUD_STORAGE_BUCKET` environment variable is globally unique for creating a Google Cloud Storage bucket.
-
-### Step 6: Initialize GemBatch
-
-Run the following command to initialize GemBatch in your project:
-```sh
-gembatch init
 ```
 
-The gembatch init command initializes the GemBatch environment by performing several tasks:
+The code defines three functions: `task_a_prompt1`, `task_a_prompt2`, and `task_a_output`. These functions represent the steps in your prompt chain.
 
-- Identifies the Firebase project and loads environment variables.
-- Checks and enables necessary Google Cloud APIs like Vertex AI and BigQuery.
-- Enables BigQuery audit logging.
-- Creates a BigQuery dataset for storing prediction results.
-- Creates a Google Cloud Storage bucket for batch processing.
-- Updates Firestore indexes required for GemBatch.
-- Deploys Eventarc triggers for handling events in the GemBatch environment.
+1. `task_a_prompt1():`
 
-### Step 7: Deploy Firestore
-After running `gembatch init`, make sure the new indexes are deployed:
-```sh
-firebase deploy --only=firestore
+    - This function initiates the prompt chain.
+    - It uses gembatch.submit() to send the first prompt to Gemini.
+    - The prompt is defined as a dictionary, following the structure of [GenerateContentRequest](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference#request_body)
+    - It specifies the Gemini model to use ("publishers/google/models/gemini-1.5-pro-002").
+    - It designates task_a_prompt2 as the callback function to be executed when the response for this prompt is received.
+
+2. task_a_prompt2(response):
+
+    - This function is the callback function for the first prompt. It receives the response from Gemini as an argument.
+    - It constructs the second prompt, including the model's response from the previous step and a new user message.
+    - It again uses gembatch.submit() to send this prompt to Gemini.
+    - It specifies the same Gemini model.
+    - It sets task_a_output as the callback function for the second prompt.
+
+3. `task_a_output(response):`
+
+    - This function is the callback function for the second prompt.
+    - It receives the final response from Gemini.
+    - It simply prints the response text.
+
+The chain is started by calling the first function:
+
+```
+task_a_prompt1()
 ```
 
-You can view your Firestore indexes at:
-[Firestore Indexes](https://console.firebase.google.com/project/${PROJECT_ID}/firestore/databases/-default-/indexes)
-
-## Example
-The core of gembatch is the `gembatch.submit(...)` function:
-
-```python
-def submit(
-    request: dict,
-    model: str,
-    handler: types.ResponseHandler,
-    params: dict | None = None,
-) -> str:
-    """Enqueue a new generation job.
-
-    Args:
-        request: The Gemini generation request in dictionary form.
-        model: The model to be used for generation.
-        handler: The handler for the generation job.
-        params: The parameters for the handler.
-
-    Returns:
-        The UUID of the job.
-
-    Raises:
-        ValueError: If the handler does not belong to a module or is a lambda function.
-
-    Example:
-        >>> submit(
-        ...     {"contents": [{"role": "user", "parts": [{"text": "Hi! How are you?"}]}]},
-        ...     "publishers/google/models/gemini-1.5-flash-002",
-        ...     echo_action,
-        ... )
-        '123e4567-e89b-12d3-a456-426614174000'
-    """
-```
-
-The following example demonstrates how to use the GemBatch library to submit a prompt to a Gemini model and handle the response. 
+This pattern of chaining prompts and callbacks allows you to create complex interactions with the language model, where each step depends on the output of the previous step. The gembatch library handles the underlying communication with Gemini and manages the execution of the prompt chain using efficient batch jobs. This not only simplifies development but also reduces costs by taking advantage of Gemini's batch pricing, which offers a 50% discount compared to individual requests.
 
 
-```python
-from firebase_admin import initialize_app
-from firebase_functions import https_fn, logger
-from vertexai import generative_models
+## How Gembatch Works
 
-import gembatch
-from gembatch import *
+![](./docs/gembatch_steps.gif)
 
-initialize_app()
+This flowchart illustrates how Gembatch efficiently manages multiple prompt chains concurrently using batch processing. Here's a breakdown:
 
+1. Independent Prompt Chains:
 
-def echo_action(response: generative_models.GenerationResponse):
-    logger.debug(response.to_dict())
-    print("Echo action.")
+    The diagram depicts three separate prompt chains (Task A, Task B, Task C), each with its own sequence of prompts and responses.
+    Each chain represents a distinct conversation or task with the language model.
 
+2. Gembatch Submission:
 
-@https_fn.on_request()
-def on_request_example(req: https_fn.Request) -> https_fn.Response:
-    gembatch.submit(
-        {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": "Hi! How are you?"}],
-                }
-            ],
-        },
-        "publishers/google/models/gemini-1.5-flash-002",
-        echo_action,
-    )
-    return https_fn.Response("OK")
-```
+    As each prompt in a chain is ready for submission, Gembatch's submit() function is called.
+    Instead of sending the prompt to Gemini immediately, Gembatch adds it to a job queue.
 
-1. Import Necessary Modules:
+3. Batch Formation:
 
-    ```py
-    from firebase_admin import initialize_app
-    from firebase_functions import https_fn, logger
-    from vertexai import generative_models
+    Gembatch intelligently groups prompts from different chains into batches.
+    This is shown in the "Job Queue" where "Batch 1" contains "Prompt 1" from each of the tasks.
 
-    import gembatch
-    from gembatch import *
-    ```
+4. Batch Execution:
 
-2. Initialize Firebase App:
+    Gembatch periodically sends these batches to Gemini for processing.
+    This minimizes the number of interactions with the API and leverages Gemini's batch discounts.
 
-    ```py
-    initialize_app()
-    ```
+5. Response Handling:
 
-3. Define a Response Handler:
+    When Gemini returns responses for a batch, Gembatch routes them back to the appropriate prompt chains.
+    For instance, "Responses Batch 1" is distributed back to each task, triggering the next step in their respective chains.
 
-    ```py
-    def echo_action(response: generative_models.GenerationResponse):
-        logger.debug(response.to_dict())
-        print("Echo action.")
-    ```
+6. Chain Continuation:
 
-    `echo_action` is a function that logs the response and prints a message. This function will be called when the Gemini model returns a response.
+    Each task processes the response and, if necessary, generates the next prompt in its sequence.
+    This continues until the chain reaches its "Output" stage, signifying the completion of that specific task.
 
-    > Note: The handler will be called within the `handleGemBatchRequestComplete` cloud function. You can check the log in the logs explorer with the following query:
-    > ```
-    > (resource.type = "cloud_function"
-    > resource.labels.function_name = "handleGemBatchRequestComplete")
-    > OR 
-    > (resource.type = "cloud_run_revision"
-    > resource.labels.service_name = "handlegembatchrequestcomplete")
-    > ```
+**Key Takeaways:**
 
-4. Define an HTTP Function:
+1. Efficiency: Gembatch optimizes prompt processing by grouping them into batches, reducing API calls and costs.
+2. Concurrency: Multiple prompt chains can progress simultaneously, improving overall throughput.
+3. Simplified Management: Gembatch handles the complexities of batching and response routing, allowing you to focus on designing your prompt chains.
 
-    ```
-    @https_fn.on_request()
-    def on_request_example(req: https_fn.Request) -> https_fn.Response:
-        gembatch.submit(
-            {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [{"text": "Hi! How are you?"}],
-                    }
-                ],
-            },
-            "publishers/google/models/gemini-1.5-flash-002",
-            echo_action,
-        )
-        return https_fn.Response("Hello world!")
-    ```
+## Ready to get started?
 
-    - on_request_example is an HTTP function that will be triggered by an HTTP request.
-    - Inside this function, gembatch.submit is called to submit a prompt to the Gemini model. The prompt is a simple message "Hi! How are you?".
-    - The echo_action function is passed as the handler to process the response from the Gemini model.
--    The function returns an HTTP response with the message "OK".
-
-
-
-## Supported Models
-
-GemBatch currently supports the following models:
-
-- `publishers/google/models/gemini-1.5-flash-002`
-- `publishers/google/models/gemini-1.5-flash-001`
-- `publishers/google/models/gemini-1.5-pro-002`
-- `publishers/google/models/gemini-1.5-pro-001`
+Now that you have an overview of Gembatch, learn how to install and configure it in your Firebase project with our step-by-step [Installation Guide](./docs/installation.md).

@@ -177,6 +177,12 @@ def iterate_pending_jobs(db: fs.Client, model: str) -> Iterable[models.Job]:
 def consume_gembatch_job(db: fs.Client, model: str):
     """Consume a gem batch job from the queue."""
     count = get_queueing_job_count_for_model(db, model)
+    if count <= 0:
+        logger.debug("No jobs to consume.")
+        return
+    elif count >= configs.GEMBATCH_MAX_REQUESTS_PER_BATCH.value:
+        prepare_to_flush_jobs(db, model)
+        return
 
     status = models.Status.from_db(db)
     last_submit_time = status.get_last_submit_time(model)
@@ -189,14 +195,7 @@ def consume_gembatch_job(db: fs.Client, model: str):
         seconds=configs.GEMBATCH_BATCH_INTERVAL_SECONDS.value
     )
 
-    if count <= 0:
-        logger.debug("No jobs to consume.")
-        return
-
-    if count >= configs.GEMBATCH_MAX_REQUESTS_PER_BATCH.value:
-        prepare_to_flush_jobs(db, model)
-        return
-    elif last_submit_time + dt.timedelta(
+    if last_submit_time + dt.timedelta(
         seconds=configs.GEMBATCH_BATCH_INTERVAL_SECONDS.value
     ) <= dt.datetime.now(tz=dt.timezone.utc):
         oldest_job = get_oldest_queueing_job_for_model(db, model)
@@ -211,8 +210,15 @@ def consume_gembatch_job(db: fs.Client, model: str):
             return
         prepare_to_flush_jobs(db, model)
         return
-    elif count > 0:
-        logger.debug("next submit time: ", next_submit_time.isoformat())
+    elif (
+        recorded_time := status.get_next_submit_time(model)
+    ) is None or next_submit_time > recorded_time:
+        logger.debug(
+            f"want next submit time to be {next_submit_time.isoformat()},"
+            f"but got {recorded_time.isoformat() if recorded_time else 'None'}"
+        )
+        status.set_next_submit_time(model, next_submit_time)
+        status.save(db)
         delta = next_submit_time - dt.datetime.now(tz=dt.timezone.utc)
         delta_seconds = max(0, int(delta.total_seconds()))
         utils.CloudRunQueue.open(
@@ -225,14 +231,15 @@ def consume_gembatch_job(db: fs.Client, model: str):
 
 def prepare_to_flush_jobs(db: fs.Client, model: str):
     """Mark jobs to be flushed."""
-    batch = db.batch()
-    for job in iterate_queueing_jobs(db, model):
-        job.status = models.StatusEnum.PENDING
-        batch.update(
-            db.collection(JOB_QUEUE_COLLECTION).document(job.uuid),
-            job.asdict(),
-        )
-    batch.commit()
+    for jobs in itertools.batched(iterate_queueing_jobs(db, model), 50):
+        batch = db.batch()
+        for job in jobs:
+            job.status = models.StatusEnum.PENDING
+            batch.update(
+                db.collection(JOB_QUEUE_COLLECTION).document(job.uuid),
+                job.asdict(),
+            )
+        batch.commit()
     status = models.Status.from_db(db)
     status.set_last_submit_time(model, dt.datetime.now(tz=dt.timezone.utc))
     status.save(db)
@@ -440,14 +447,15 @@ def mark_all_jobs_in_batch_as_failed(db: fs.Client, batch_job_id: str):
         .where(filter=fs.FieldFilter("batch_job_id", "==", batch_job_id))
         .stream()
     )
-    batch = db.batch()
     doc: fs.DocumentSnapshot
-    for doc in docs:
-        job = models.Job.from_dict(doc.to_dict())
-        # TODO: consider updating job creation time
-        job.status = models.StatusEnum.FAILED
-        batch.update(doc.reference, job.asdict())
-    batch.commit()
+    for _docs in itertools.batched(docs, 50):
+        batch = db.batch()
+        for doc in _docs:
+            job = models.Job.from_dict(doc.to_dict())
+            # TODO: consider updating job creation time
+            job.status = models.StatusEnum.FAILED
+            batch.update(doc.reference, job.asdict())
+        batch.commit()
 
 
 @tasks_fn.on_task_dispatched(

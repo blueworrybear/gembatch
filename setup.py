@@ -4,7 +4,7 @@ import setuptools  # type: ignore
 
 setuptools.setup(
     name="gembatch",
-    version="0.1.0",
+    version="0.1.3",
     description=(
         "A Python library simplifies building language chain applications with Gemini, "
         "leveraging batch mode for cost-effective prompt processing."

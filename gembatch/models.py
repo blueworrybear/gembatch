@@ -100,6 +100,7 @@ class Status(BaseDocument):
     """Represents the status of a gem batch."""
 
     last_batch_submit_time: dict = dataclasses.field(default_factory=dict)
+    next_batch_submit_time: dict = dataclasses.field(default_factory=dict)
 
     def get_last_submit_time(self, model: str) -> dt.datetime | None:
         """
@@ -119,6 +120,25 @@ class Status(BaseDocument):
         Set the last submit time for the model.
         """
         self.last_batch_submit_time[model] = ts
+
+    def get_next_submit_time(self, model: str) -> dt.datetime | None:
+        """
+        Returns the next submit time for the model.
+        """
+        if model not in self.next_batch_submit_time:
+            return None
+        ts = self.next_batch_submit_time.get(
+            model, dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+        )
+        if isinstance(ts, str):
+            return dt.datetime.fromisoformat(ts).replace(tzinfo=dt.timezone.utc)
+        return ts
+
+    def set_next_submit_time(self, model: str, ts: dt.datetime):
+        """
+        Set the next submit time for the model.
+        """
+        self.next_batch_submit_time[model] = ts
 
     @classmethod
     def from_db(cls, db: fs.Client) -> "Status":
@@ -265,6 +285,7 @@ class Response(BaseDocument):
     """Represents a response for a gem batch job."""
 
     response: str
+    ttl: DateTimeField = DateTimeField()
 
     def __post_init__(self):
         self.ttl = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=3)
