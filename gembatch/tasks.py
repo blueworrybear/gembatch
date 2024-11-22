@@ -30,6 +30,7 @@ JOBS_IN_QUEUE_FILTER = fs.Or(
     document=configs.GEMBATCH_FIRESTORE_JOB_QUEUE_COLLECTION.value + "/{job_id}",
     region=configs.GEMBATCH_REGION.value,
     memory=configs.GEMBATCH_SMALL_JOB_MEMORY.value,
+    timeout_sec=600,
 )
 def on_gembatch_job_created(
     event: firestore_fn.Event[firestore_fn.DocumentSnapshot | None],
@@ -46,6 +47,7 @@ def on_gembatch_job_created(
     document=configs.GEMBATCH_FIRESTORE_JOB_QUEUE_COLLECTION.value + "/{job_id}",
     region=configs.GEMBATCH_REGION.value,
     memory=configs.GEMBATCH_SMALL_JOB_MEMORY.value,
+    timeout_sec=600,
 )
 def on_gembatch_job_updated(
     event: firestore_fn.Event[
@@ -84,6 +86,7 @@ def on_gembatch_batch_job_created(_):
     document=configs.GEMBATCH_FIRESTORE_BATCH_QUEUE_COLLECTION.value + "/{job_id}",
     region=configs.GEMBATCH_REGION.value,
     memory=configs.GEMBATCH_SMALL_JOB_MEMORY.value,
+    timeout_sec=600,
 )
 def on_gembatch_batch_job_updated(_):
     """Handle the update of a gem batch job."""
@@ -316,6 +319,7 @@ def flush_gembatch_job_queue(db: fs.Client, model: str):
     max_instances=1,
     concurrency=1,
     region=configs.GEMBATCH_REGION.value,
+    timeout_sec=1800,
 )
 def runGemBatchJob(_: tasks_fn.CallableRequest):  # pylint: disable=[invalid-name]
     """
@@ -370,6 +374,7 @@ def count_gembatch_running_batch_jobs(db: fs.Client) -> int:
     max_instances=min(50, configs.GEMBATCH_MAX_REQUESTS_PER_BATCH.value // 5),
     concurrency=5,
     region=configs.GEMBATCH_REGION.value,
+    timeout_sec=1800,
 )
 def handleGemBatchRequestComplete(
     req: tasks_fn.CallableRequest,
@@ -402,6 +407,7 @@ def handleGemBatchRequestComplete(
     max_instances=1,
     concurrency=1,
     region=configs.GEMBATCH_REGION.value,
+    timeout_sec=1800,
 )
 def checkRunningGemBatchJobStatus(
     req: tasks_fn.CallableRequest,
@@ -467,6 +473,7 @@ def mark_all_jobs_in_batch_as_failed(db: fs.Client, batch_job_id: str):
     max_instances=10,
     concurrency=1,
     region=configs.GEMBATCH_REGION.value,
+    timeout_sec=1800,
 )
 def runOnGemBatchJobSuccess(
     req: tasks_fn.CallableRequest,

@@ -15,6 +15,7 @@ K = TypeVar("K", bound="BaseDocument")
 COLLECTION_REQUESTS = configs.GEMBATCH_FIRESTORE_REQUESTS_COLLECTION.value
 DOCUMENT_REQUEST = "request"
 DOCUMENT_RESPONSE = "response"
+FIRESTORE_SIZE_LIMIT = 1048576 - 500  # 1MB - 500 bytes (buffer)
 
 
 class StatusEnum(str, enum.Enum):
@@ -227,6 +228,7 @@ class Job(BaseDocument):
         req_ref = doc.reference.collection(COLLECTION_REQUESTS).document(
             DOCUMENT_REQUEST
         )
+        # TODO: check size of request
         req_ref.set(
             Request(request=json.dumps(request, indent=2, ensure_ascii=False)).asdict()
         )
@@ -268,6 +270,7 @@ class Request(BaseDocument):
     """Represents a request for a gem batch job."""
 
     request: str
+    blob: str | None = None
     ttl: DateTimeField = DateTimeField()
 
     def __post_init__(self):
@@ -285,6 +288,7 @@ class Response(BaseDocument):
     """Represents a response for a gem batch job."""
 
     response: str
+    blob: str | None = None
     ttl: DateTimeField = DateTimeField()
 
     def __post_init__(self):
