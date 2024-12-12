@@ -187,6 +187,10 @@ def consume_gembatch_job(db: fs.Client, model: str):
         prepare_to_flush_jobs(db, model)
         return
 
+    batch_interval = configs.GEMBATCH_BATCH_INTERVAL_SECONDS.value
+    if count < configs.GEMBATCH_MAX_REQUESTS_PER_BATCH.value // 10:
+        batch_interval *= 2  # double the interval if the request is low
+
     status = models.Status.from_db(db)
     last_submit_time = status.get_last_submit_time(model)
     if last_submit_time is None:
@@ -194,13 +198,11 @@ def consume_gembatch_job(db: fs.Client, model: str):
         status.set_last_submit_time(model, last_submit_time)
         status.save(db)
     logger.debug("last submit time:", last_submit_time.isoformat())
-    next_submit_time = last_submit_time + dt.timedelta(
-        seconds=configs.GEMBATCH_BATCH_INTERVAL_SECONDS.value
-    )
+    next_submit_time = last_submit_time + dt.timedelta(seconds=batch_interval)
 
-    if last_submit_time + dt.timedelta(
-        seconds=configs.GEMBATCH_BATCH_INTERVAL_SECONDS.value
-    ) <= dt.datetime.now(tz=dt.timezone.utc):
+    if last_submit_time + dt.timedelta(seconds=batch_interval) <= dt.datetime.now(
+        tz=dt.timezone.utc
+    ):
         oldest_job = get_oldest_queueing_job_for_model(db, model)
         if oldest_job and oldest_job.created_at > next_submit_time:
             logger.debug("Last submit time is too old, wait for the next run.")
@@ -208,7 +210,7 @@ def consume_gembatch_job(db: fs.Client, model: str):
             status.save(db)
             utils.CloudRunQueue.open(
                 "consumeGemBatchJob",
-                delay_seconds=configs.GEMBATCH_BATCH_INTERVAL_SECONDS.value,
+                delay_seconds=batch_interval,
             ).run(model=model)
             return
         prepare_to_flush_jobs(db, model)

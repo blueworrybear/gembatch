@@ -1,5 +1,5 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/gembatch)
-[![PyPi](https://img.shields.io/badge/gembatch-v0.1.3-blue?logo=python)](https://pypi.org/project/gembatch/)
+[![PyPi](https://img.shields.io/badge/gembatch-v0.1.5-blue?logo=python)](https://pypi.org/project/gembatch/)
 ![License - MIT](https://img.shields.io/github/license/blueworrybear/gembatch.svg)
 ![Firebase](https://img.shields.io/badge/Fireabse-orange?logo=firebase)
 

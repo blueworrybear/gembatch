@@ -4,7 +4,7 @@ import setuptools  # type: ignore
 
 setuptools.setup(
     name="gembatch",
-    version="0.1.4",
+    version="0.1.5",
     description=(
         "A Python library simplifies building language chain applications with Gemini, "
         "leveraging batch mode for cost-effective prompt processing."
@@ -24,6 +24,7 @@ setuptools.setup(
         "python-dotenv>=1.0.1",
         "inquirer>=3.4.0",
         "prompt_toolkit>=3.0.48",
+        "google-generativeai>=0.8.3",
     ],
     entry_points={
         "console_scripts": [
